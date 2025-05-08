@@ -1,0 +1,53 @@
+# This is a basic workflow to help you get started with Actions
+name: Deploy Terraform Code
+
+on:
+  # on every git push, merge to branch
+  push:
+    branches:
+    - main
+    - staging
+    - dev
+
+  # # Allows you to run this workflow manually from the Actions tab
+  # workflow_dispatch:
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  terraform-job:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+    environment: ${{ (github.ref == 'refs/heads/main' && 'production') || (github.ref == 'refs/heads/staging' && 'staging') || 'dev' }}
+
+    defaults:
+      run:
+        working-directory: ./gollum-root
+
+    steps:
+      - uses: actions/checkout@v4
+
+# OIDC role assume - works by establishing trust relationship
+# instead of providing access/secret keys
+# establishing trust relationship between GitHub Organization and AWS Account Roles
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.IAM_ROLE }}
+          role-session-name: runner-session
+
+      - name: Terraform Init
+        run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="${{ vars.STAGE }}.tfvars" -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -var-file="${{ vars.STAGE }}.tfvars" -input=false -auto-approve

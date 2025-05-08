@@ -1,0 +1,10 @@
+root_var_ec2_types          = ["t3.micro"]
+root_var_workers_desired    = 1
+root_var_workers_max        = 5
+root_var_workers_min        = 1
+root_var_k8s_version        = "1.32"
+root_var_vpc_cidr           = "10.9.0.0/16"
+root_var_subnet_cidrs       = ["10.9.0.0/20", "10.9.16.0/20", "10.9.32.0/20"]
+root_var_availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+root_var_project            = "gollum"
+root_var_environment        = "staging"

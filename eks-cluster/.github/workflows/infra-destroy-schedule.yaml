@@ -1,0 +1,40 @@
+# This is a basic workflow to help you get started with Actions
+name: Destroy Terraform Code
+
+on:
+  schedule:
+    - cron: '30 3 * * 2'   # Tuesday 3:30 AM UTC = Monday 9:30 PM CST
+    - cron: '30 3 * * 4'   # Thursday 3:30 AM UTC = Wednesday 9:30 PM CST
+    - cron: '30 3 * * 5'   # Friday 3:30 AM UTC = Thursday 9:30 PM CST
+    - cron: '0 21 * * 6'   # Saturday 9:00 PM UTC = Saturday 3:00 PM CST
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  terraform-job:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::834786370659:role/gha-runner-gollum-role-dev
+          role-session-name: runner-session
+
+# OIDC role assume - works by establishing trust relationship
+# instead of providing access/secret keys
+# establishing trust relationship between GitHub Organization and AWS Account Roles
+
+      # Runs a set of commands using the runners shell
+      - name: Run Terraform Code
+        working-directory: ./gollum-root
+        run: |
+          terraform init
+          terraform plan    -var-file="dev.tfvars" -input=false
+          terraform destroy -var-file="dev.tfvars" -input=false -auto-approve
